@@ -2,11 +2,16 @@ import argparse
 import sys
 
 
-
 def get_file_content(file_name):
     try:
         with open(file_name, 'r', encoding='utf8') as fh:
-            return [[i for i in line if i.isdigit()] for line in fh.readlines()]
+            arr = [[int(i) for i in line if i.isdigit()] for line in fh.readlines()]
+            zeros = []
+            for i, sub in enumerate(arr):
+                for j, dig in enumerate(sub):
+                    if dig == 0:
+                        zeros.append((i, j))
+            return arr, zeros
     except Exception:
         return []
 
@@ -18,7 +23,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('file')
     args = parser.parse_args()
-    print(get_file_content(args.file))
+    print(get_file_content(args.file)[1])
 
 #command
 #python main.py filename
