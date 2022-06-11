@@ -1,82 +1,75 @@
-import argparse
+import heapq
+import sys
 
-INIT_ROAD_COST = -1
+def get_file_content(file_path):
+    lines = []
+    with open(file_path) as f:
+        for line in f:
+            lines.append(line.rstrip())
+    return lines
 
-class Node:
-    def __init__(self, i, j, cost):
-        self.i = i
-        self.j = j
-        self.cost = cost
-        self.connected_with = []
-        self.road_cost = INIT_ROAD_COST
-        self.road = []
-        self.is_visited = False
+def get_zeros(tab):
+    zeros = []
+    height = len(tab)
+    width = len(tab[0])
+    for i in range(height):
+        for j in range(width):
+            if tab[i][j] == '0':
+                zeros.append((j,i))
+    return zeros
 
-    def __str__(self):
-        return str(self.cost)
-
-def get_file_content(file_name):
-    try:
-        with open(file_name, 'r', encoding='utf8') as fh:
-            nodes_arr = [
-                    [Node(i, j, int(dig)) for j, dig in enumerate(line) if dig.isdigit()]
-                    for i, line in enumerate(fh.readlines())
-                ]
-            for i, sub_arr in enumerate(nodes_arr):
-                for j, node in enumerate(sub_arr):
-                    if i - 1 >= 0:
-                        node.connected_with.append(nodes_arr[i - 1][j])
-                    if i + 1 < len(nodes_arr):
-                        node.connected_with.append(nodes_arr[i + 1][j])
-                    if j - 1 >= 0:
-                        node.connected_with.append(nodes_arr[i][j - 1])
-                    if j + 1 < len(sub_arr):
-                        node.connected_with.append(nodes_arr[i][j + 1])
-            return nodes_arr
-    except Exception as e:
-        print(e)
-        return []
-
-def dijkstra(node):
-    while node is not None:
-        min_i = None
-        for i in node.connected_with:
-            if i.is_visited:
-                continue
-            tmp = node.road_cost + i.cost
-            if i.road_cost == INIT_ROAD_COST or i.road_cost > tmp:
-                i.road_cost = tmp
-                i.road = node.road.copy()
-                i.road.append(i)
-            if min_i is None or (min_i.road_cost > i.road_cost):
-                min_i = i
-        node.is_visited = True
-        node = min_i
+def get_neighbors(point, board, visited):
+    x, y = point
+    neighbors = []
+    if not (x + 1, y) in visited and (x + 1 < len(board[0])):
+        neighbors.append((x + 1, y))
+    if not (x - 1, y) in visited and (x - 1 >= 0):
+        neighbors.append((x - 1, y))
+    if not (x, y + 1) in visited and (y + 1 < len(board)):
+        neighbors.append((x, y + 1))
+    if not (x, y - 1) in visited and (y - 1 >= 0):
+        neighbors.append((x, y - 1))
+    return neighbors
 
 def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('file')
-    args = parser.parse_args()
-    nodes = get_file_content(args.file)
-    zeros = []
-    for sub_arr in nodes:
-        for i in sub_arr:
-            if i.cost == 0:
-                zeros.append(i)
-    if not len(zeros) == 2:
-        raise Exception('Start and end points specified uncorrectly')
-    start, end = zeros
-    start.road_cost = 0
-    start.road.append(start)
-    dijkstra(start)
+    lines = get_file_content(sys.argv[1])
+    zeros = get_zeros(lines)
+    if len(zeros) != 2:
+        print('ERROR: invalid file content')
+        return
+    root, end = zeros
+    queue = [(0, root)]
+    distances = {root: 0}
+    visited = []
+    prev = {}
+    while queue:
+        el = heapq.heappop(queue)[1]
+        if (el == end):
+            break
+        visited.append(el)
+        neighbors = get_neighbors(el, lines, visited)
+        for n in neighbors:
+            value = (int(lines[n[1]][n[0]]))
+            new_dist = distances[el] + value
+            if n not in distances.keys():
+                distances[n] = new_dist
+                prev[n] = el
+                heapq.heappush(queue, (distances[n], n))
+            elif distances[n] > new_dist:
+                distances[n] = new_dist
+                prev[n] = el
 
-    for sub_arr in nodes:
+    path = [end]
+    current = end
+    while (current != root):
+        current = prev[current]
+        path.append(current)
+
+    for y in range(len(lines)):
         line = ''
-        for el in sub_arr:
-            line += str(el) if el in end.road else ' '
+        for x in range(len(lines[0])):
+            line += lines[y][x] if (x, y) in path else ' '
         print(line)
 
-#command
-#python main.py filename
 if __name__ == "__main__":
     main()
